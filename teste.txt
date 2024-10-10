@@ -1,0 +1,8 @@
+CREATE TABLE `client` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(45) COLLATE utf8mb4_bin NOT NULL DEFAULT '0',
+  `email` varchar(85) COLLATE utf8mb4_bin NOT NULL DEFAULT '0',
+  `phone` varchar(11) COLLATE utf8mb4_bin NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `id` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
