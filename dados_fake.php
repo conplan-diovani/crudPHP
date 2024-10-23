@@ -1,11 +1,12 @@
 <?php
 
-require './Faker/src/autoload.php';
+// Inclua o arquivo autoload.php da pasta Faker que você baixou
+require_once 'faker/src/autoload.php';
 
 use Faker\Factory as Faker;
 
 // Conexão com o banco de dados
-$host = 'localhost';  // Ou o endereço do seu servidor de banco de dados
+$host = 'localhost';
 $db = 'SistemaEscolar';
 $user = 'root';  // Seu usuário do MySQL
 $pass = '';  // Sua senha do MySQL
@@ -24,20 +25,27 @@ try {
     throw new PDOException($e->getMessage(), (int)$e->getCode());
 }
 
-$faker = Faker::create();
+$faker = Faker::create('pt_BR');  // Gera dados em português do Brasil
 
 // Função para inserir 50k de dados na tabela Alunos
 function inserirAlunos($pdo, $faker, $quantidade = 50000) {
     $stmt = $pdo->prepare('INSERT INTO Alunos (nome, data_nascimento, endereco, telefone, email) VALUES (?, ?, ?, ?, ?)');
     
+    // Resetando o gerador de valores únicos de e-mails
     for ($i = 0; $i < $quantidade; $i++) {
-        $stmt->execute([
-            $faker->name,
-            $faker->date('Y-m-d', '-18 years'),  // Gerando datas para alunos com mais de 18 anos
-            $faker->address,
-            $faker->phoneNumber,
-            $faker->unique()->email
-        ]);
+        try {
+            $stmt->execute([
+                $faker->name,
+                $faker->date('Y-m-d', '-18 years'),  // Data de nascimento para alunos com mais de 18 anos
+                $faker->address,
+                $faker->phoneNumber,
+                $faker->unique()->email  // Gerando e-mails únicos
+            ]);
+        } catch (PDOException $e) {
+            // Se ocorrer um erro de duplicidade, reseta os dados únicos
+            $faker->unique(true);
+            $i--; // Retrocede o contador para tentar novamente
+        }
     }
 
     echo "50k Alunos inseridos.\n";
@@ -49,8 +57,8 @@ function inserirCursos($pdo, $faker, $quantidade = 50000) {
     
     for ($i = 0; $i < $quantidade; $i++) {
         $stmt->execute([
-            $faker->words(3, true),  // Gera um nome de curso com 3 palavras
-            $faker->numberBetween(6, 48),  // Duração entre 6 e 48 meses
+            $faker->words(3, true),  // Nome do curso com 3 palavras
+            $faker->numberBetween(6, 48),  // Duração do curso entre 6 e 48 meses
             $faker->paragraph  // Descrição do curso
         ]);
     }
@@ -63,12 +71,18 @@ function inserirProfessores($pdo, $faker, $quantidade = 50000) {
     $stmt = $pdo->prepare('INSERT INTO Professores (nome, especialidade, email, telefone) VALUES (?, ?, ?, ?)');
     
     for ($i = 0; $i < $quantidade; $i++) {
-        $stmt->execute([
-            $faker->name,
-            $faker->jobTitle,  // Título de trabalho como especialidade
-            $faker->unique()->email,
-            $faker->phoneNumber
-        ]);
+        try {
+            $stmt->execute([
+                $faker->name,
+                $faker->jobTitle,  // Especialidade do professor
+                $faker->unique()->email,  // Gerando e-mails únicos
+                $faker->phoneNumber
+            ]);
+        } catch (PDOException $e) {
+            // Se ocorrer um erro de duplicidade, reseta os dados únicos
+            $faker->unique(true);
+            $i--; // Retrocede o contador para tentar novamente
+        }
     }
 
     echo "50k Professores inseridos.\n";
@@ -80,7 +94,7 @@ function inserirMatriculas($pdo, $faker, $quantidade = 50000) {
     
     for ($i = 0; $i < $quantidade; $i++) {
         $stmt->execute([
-            $faker->numberBetween(1, 50000),  // Supondo que já existam 50k alunos e cursos
+            $faker->numberBetween(1, 50000),  // Supondo que já existam 50k alunos e 50k cursos
             $faker->numberBetween(1, 50000),
             $faker->date('Y-m-d')
         ]);
@@ -95,7 +109,7 @@ function inserirAulas($pdo, $faker, $quantidade = 50000) {
     
     for ($i = 0; $i < $quantidade; $i++) {
         $stmt->execute([
-            $faker->numberBetween(1, 50000),  // Supondo que já existam 50k cursos e professores
+            $faker->numberBetween(1, 50000),  // Supondo que já existam 50k cursos e 50k professores
             $faker->numberBetween(1, 50000),
             $faker->date('Y-m-d'),
             $faker->paragraph  // Conteúdo da aula
@@ -113,3 +127,4 @@ inserirMatriculas($pdo, $faker);
 inserirAulas($pdo, $faker);
 
 echo "Inserção concluída.\n";
+?>
