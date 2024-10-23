@@ -1,44 +1,115 @@
 <?php
-// Incluindo o autoload do Faker
+
 require './Faker/src/autoload.php';
 
 use Faker\Factory as Faker;
 
-// Configurações do banco de dados
-$host = 'localhost';
-$db = 'crud-php'; // Nome do seu banco de dados
-$user = 'root'; // Seu usuário do banco de dados
-$pass = ''; // Sua senha do banco de dados
+// Conexão com o banco de dados
+$host = 'localhost';  // Ou o endereço do seu servidor de banco de dados
+$db = 'SistemaEscolar';
+$user = 'root';  // Seu usuário do MySQL
+$pass = '';  // Sua senha do MySQL
+$charset = 'utf8mb4';
 
-// Cria a conexão
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES => false,
+];
+
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (PDOException $e) {
-    die("Erro ao conectar ao banco de dados: " . $e->getMessage());
+    throw new PDOException($e->getMessage(), (int)$e->getCode());
 }
 
-// Cria uma instância do Faker
 $faker = Faker::create();
 
-// Prepara a query de inserção
-$stmt = $pdo->prepare("INSERT INTO client (name, email, phone, country, address) VALUES (?, ?, ?, ?, ?)");
-
-// Gera e insere 50.000 registros
-for ($i = 0; $i < 50000; $i++) {
-    $name = $faker->name;
-    $email = $faker->unique()->safeEmail;
-    $phone = $faker->phoneNumber;
-    $country = $faker->country;
-    $address = $faker->address;
-
-    // Executa a inserção
-    $stmt->execute([$name, $email, $phone, $country, $address]);
-
-    // Opcional: imprime uma mensagem a cada 1000 inserções
-    if ($i % 1000 == 0) {
-        echo "Inseridos $i registros...\n";
+// Função para inserir 50k de dados na tabela Alunos
+function inserirAlunos($pdo, $faker, $quantidade = 50000) {
+    $stmt = $pdo->prepare('INSERT INTO Alunos (nome, data_nascimento, endereco, telefone, email) VALUES (?, ?, ?, ?, ?)');
+    
+    for ($i = 0; $i < $quantidade; $i++) {
+        $stmt->execute([
+            $faker->name,
+            $faker->date('Y-m-d', '-18 years'),  // Gerando datas para alunos com mais de 18 anos
+            $faker->address,
+            $faker->phoneNumber,
+            $faker->unique()->email
+        ]);
     }
+
+    echo "50k Alunos inseridos.\n";
 }
 
-echo "Inserção completa!";
+// Função para inserir 50k de dados na tabela Cursos
+function inserirCursos($pdo, $faker, $quantidade = 50000) {
+    $stmt = $pdo->prepare('INSERT INTO Cursos (nome_curso, duracao, descricao) VALUES (?, ?, ?)');
+    
+    for ($i = 0; $i < $quantidade; $i++) {
+        $stmt->execute([
+            $faker->words(3, true),  // Gera um nome de curso com 3 palavras
+            $faker->numberBetween(6, 48),  // Duração entre 6 e 48 meses
+            $faker->paragraph  // Descrição do curso
+        ]);
+    }
+
+    echo "50k Cursos inseridos.\n";
+}
+
+// Função para inserir 50k de dados na tabela Professores
+function inserirProfessores($pdo, $faker, $quantidade = 50000) {
+    $stmt = $pdo->prepare('INSERT INTO Professores (nome, especialidade, email, telefone) VALUES (?, ?, ?, ?)');
+    
+    for ($i = 0; $i < $quantidade; $i++) {
+        $stmt->execute([
+            $faker->name,
+            $faker->jobTitle,  // Título de trabalho como especialidade
+            $faker->unique()->email,
+            $faker->phoneNumber
+        ]);
+    }
+
+    echo "50k Professores inseridos.\n";
+}
+
+// Função para inserir 50k de dados na tabela Matriculas
+function inserirMatriculas($pdo, $faker, $quantidade = 50000) {
+    $stmt = $pdo->prepare('INSERT INTO Matriculas (id_aluno, id_curso, data_matricula) VALUES (?, ?, ?)');
+    
+    for ($i = 0; $i < $quantidade; $i++) {
+        $stmt->execute([
+            $faker->numberBetween(1, 50000),  // Supondo que já existam 50k alunos e cursos
+            $faker->numberBetween(1, 50000),
+            $faker->date('Y-m-d')
+        ]);
+    }
+
+    echo "50k Matrículas inseridas.\n";
+}
+
+// Função para inserir 50k de dados na tabela Aulas
+function inserirAulas($pdo, $faker, $quantidade = 50000) {
+    $stmt = $pdo->prepare('INSERT INTO Aulas (id_curso, id_professor, data_aula, conteudo) VALUES (?, ?, ?, ?)');
+    
+    for ($i = 0; $i < $quantidade; $i++) {
+        $stmt->execute([
+            $faker->numberBetween(1, 50000),  // Supondo que já existam 50k cursos e professores
+            $faker->numberBetween(1, 50000),
+            $faker->date('Y-m-d'),
+            $faker->paragraph  // Conteúdo da aula
+        ]);
+    }
+
+    echo "50k Aulas inseridas.\n";
+}
+
+// Chamando as funções para preencher as tabelas
+inserirAlunos($pdo, $faker);
+inserirCursos($pdo, $faker);
+inserirProfessores($pdo, $faker);
+inserirMatriculas($pdo, $faker);
+inserirAulas($pdo, $faker);
+
+echo "Inserção concluída.\n";
